@@ -15,22 +15,36 @@ public class TimeServlet extends HttpServlet {
 
   protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
-    response.setContentType("text/html");
+    response.setContentType("text/html;charset=UTF-8");
 
-    PrintWriter out = response.getWriter();
+    String timezone = request.getParameter("timezone");
+
+    SimpleDateFormat sdf;
+    if (timezone != null && !timezone.isEmpty()) {
+      sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
+      sdf.setTimeZone(java.util.TimeZone.getTimeZone("GMT" + timezone));
+    } else {
+      sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+      sdf.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+    }
 
 
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
-    sdf.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
     String currentTime = sdf.format(new Date());
 
 
-    out.println("<html>");
-    out.println("<head><title>Current Time (UTC)</title></head>");
-    out.println("<body>");
-    out.println("<h1>Current Time (UTC)</h1>");
-    out.println("<p>" + currentTime + "</p>");
-    out.println("</body>");
-    out.println("</html>");
+    try (PrintWriter out = response.getWriter()) {
+      out.println("<!DOCTYPE html>");
+      out.println("<html>");
+      out.println("<head>");
+      out.println("<title>Current Time</title>");
+      out.println("</head>");
+      out.println("<body>");
+      out.println("<h2>Current Time</h2>");
+      out.println("<p>Time: " + currentTime + "</p>");
+      out.println("<p>Timezone: " + (timezone != null ? timezone : "UTC") + "</p>");
+      out.println("</body>");
+      out.println("</html>");
+    }
   }
 }
+
