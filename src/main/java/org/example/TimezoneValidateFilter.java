@@ -4,6 +4,8 @@ import javax.servlet.*;
 import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.TimeZone;
 
 @WebFilter("/time")
@@ -19,7 +21,7 @@ public class TimezoneValidateFilter implements Filter {
 
     String timezone = request.getParameter("timezone");
 
-    if (timezone != null && !isValidTimezone(timezone)) {
+    if (timezone != null && !isValidTimezone(URLDecoder.decode(timezone, StandardCharsets.UTF_8))) {
       // Invalid timezone, send an error response
       response.setContentType("text/html;charset=UTF-8");
       response.getWriter().write("Invalid timezone");
@@ -35,6 +37,9 @@ public class TimezoneValidateFilter implements Filter {
   }
 
   private boolean isValidTimezone(String timezone) {
-    return TimeZone.getTimeZone(timezone).getID().equals(timezone);
+
+    return timezone.matches("[\\w\\-\\+]+") && TimeZone.getTimeZone(timezone).getID().equals(timezone);
   }
+
+
 }
