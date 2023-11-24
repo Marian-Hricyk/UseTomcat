@@ -6,6 +6,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.TimeZone;
 
 @WebFilter("/time")
@@ -21,14 +23,14 @@ public class TimezoneValidateFilter implements Filter {
 
     String timezone = request.getParameter("timezone");
 
-    if (timezone != null && !isValidTimezone(URLDecoder.decode(timezone, StandardCharsets.UTF_8))) {
+    if (timezone != null && isValidTimezone(timezone)) {
+      // Valid timezone, proceed with the filter chain
+      chain.doFilter(request, response);
+    } else {
       // Invalid timezone, send an error response
       response.setContentType("text/html;charset=UTF-8");
-      response.getWriter().write("Invalid timezone");
+      response.getWriter().write(getCurrentTime());
       ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_BAD_REQUEST);
-    } else {
-      // Valid timezone, continue with the filter chain
-      chain.doFilter(request, response);
     }
   }
 
@@ -37,9 +39,12 @@ public class TimezoneValidateFilter implements Filter {
   }
 
   private boolean isValidTimezone(String timezone) {
-
     return timezone.matches("[\\w\\-\\+]+") && TimeZone.getTimeZone(timezone).getID().equals(timezone);
   }
 
-
+  private String getCurrentTime() {
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
+    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+    return "Current Time: " + sdf.format(new Date());
+  }
 }
