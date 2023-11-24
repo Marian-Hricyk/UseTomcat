@@ -1,5 +1,12 @@
 package org.example;
 
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.context.WebContext;
+import org.thymeleaf.templateresolver.WebApplicationTemplateResolver;
+import org.thymeleaf.web.servlet.JavaxServletWebApplication;
+
+
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -9,10 +16,30 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 @WebServlet("/time")
 public class TimeServlet extends HttpServlet {
+  private TemplateEngine engine;
 
+  @Override
+  public void init() throws ServletException {
+    engine = new TemplateEngine();
+
+    JavaxServletWebApplication jswa =
+            JavaxServletWebApplication.buildApplication(this.getServletContext());
+
+    WebApplicationTemplateResolver
+            resolver = new WebApplicationTemplateResolver(jswa);
+    resolver.setPrefix("/WEB-INF/temp/");
+    resolver.setSuffix(".html");
+    resolver.setTemplateMode("HTML5");
+    resolver.setOrder(engine.getTemplateResolvers().size());
+    resolver.setCacheable(false);
+    engine.addTemplateResolver(resolver);
+  }
+
+@Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
     response.setContentType("text/html;charset=UTF-8");
@@ -30,21 +57,14 @@ public class TimeServlet extends HttpServlet {
 
 
     String currentTime = sdf.format(new Date());
+  Context context = new Context(Locale.US);
+
+    context.setVariable("currentTime", currentTime);
+    context.setVariable("timezone", timezone != null ? timezone : "UTC");
+
+    engine.process("timeTemplate", context, response.getWriter());
 
 
-    try (PrintWriter out = response.getWriter()) {
-      out.println("<!DOCTYPE html>");
-      out.println("<html>");
-      out.println("<head>");
-      out.println("<title>Current Time</title>");
-      out.println("</head>");
-      out.println("<body>");
-      out.println("<h2>Current Time</h2>");
-      out.println("<p>Time: " + currentTime + "</p>");
-      out.println("<p>Timezone: " + (timezone != null ? timezone : "UTC") + "</p>");
-      out.println("</body>");
-      out.println("</html>");
-    }
   }
 }
 
