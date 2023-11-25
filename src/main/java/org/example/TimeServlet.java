@@ -15,55 +15,37 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Locale;
 
 @WebServlet("/time")
 public class TimeServlet extends HttpServlet {
-  private TemplateEngine engine;
 
   @Override
-  public void init() throws ServletException {
-    engine = new TemplateEngine();
-
-    JavaxServletWebApplication jswa =
-            JavaxServletWebApplication.buildApplication(this.getServletContext());
-
-    WebApplicationTemplateResolver
-            resolver = new WebApplicationTemplateResolver(jswa);
-    resolver.setPrefix("/WEB-INF/temp/");
-    resolver.setSuffix(".html");
-    resolver.setTemplateMode("HTML5");
-    resolver.setOrder(engine.getTemplateResolvers().size());
-    resolver.setCacheable(false);
-    engine.addTemplateResolver(resolver);
-  }
-
-@Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
-    response.setContentType("text/html;charset=UTF-8");
-
-    String timezone = request.getParameter("timezone");
-
-    SimpleDateFormat sdf;
-    if (timezone != null && !timezone.isEmpty()) {
-      sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
-      sdf.setTimeZone(java.util.TimeZone.getTimeZone("GMT" + timezone));
+    String timezoneParam = request.getParameter("timezone");
+    if (timezoneParam == null) {
+      timezoneParam = "Etc/GMT";
     } else {
-      sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
-      sdf.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+      timezoneParam = timezoneParam.replace("UTC+", "Etc/GMT-").replace("UTC-", "Etc/GMT+");
     }
+    ZoneId zoneId = ZoneId.of(timezoneParam);
+    DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
+    ZonedDateTime currentTime = ZonedDateTime.now(zoneId);
+    String formTime = currentTime.format(format).replace("GMT", "UTC");
 
 
-    String currentTime = sdf.format(new Date());
-  Context context = new Context(Locale.US);
-
-    context.setVariable("currentTime", currentTime);
-    context.setVariable("timezone", timezone != null ? timezone : "UTC");
-
-    engine.process("timeTemplate", context, response.getWriter());
-
+    response.setContentType("text/html; charset=utf-8");
+    response.getWriter().println("<html>");
+    response.getWriter().println("<body>");
+    response.getWriter().println(formTime);
+    response.getWriter().println("</body>");
+    response.getWriter().println("</html>");
+    response.getWriter().close();
 
   }
 }
