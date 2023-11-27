@@ -2,7 +2,6 @@ package org.example;
 
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
-import org.thymeleaf.context.WebContext;
 import org.thymeleaf.templateresolver.WebApplicationTemplateResolver;
 import org.thymeleaf.web.servlet.JavaxServletWebApplication;
 
@@ -13,16 +12,31 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.Locale;
 
 @WebServlet("/time")
 public class TimeServlet extends HttpServlet {
+  private TemplateEngine engine;
+
+  @Override
+  public void init() throws ServletException {
+    engine = new TemplateEngine();
+
+    JavaxServletWebApplication jswa =
+            JavaxServletWebApplication.buildApplication(this.getServletContext());
+
+    WebApplicationTemplateResolver
+            resolver = new WebApplicationTemplateResolver(jswa);
+    resolver.setPrefix("/templates/");
+    resolver.setSuffix(".html");
+    resolver.setTemplateMode("HTML5");
+    resolver.setOrder(engine.getTemplateResolvers().size());
+    resolver.setCacheable(false);
+    engine.addTemplateResolver(resolver);
+  }
 
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -34,19 +48,15 @@ public class TimeServlet extends HttpServlet {
       timezoneParam = timezoneParam.replace("UTC+", "Etc/GMT-").replace("UTC-", "Etc/GMT+");
     }
     ZoneId zoneId = ZoneId.of(timezoneParam);
-    DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
     ZonedDateTime currentTime = ZonedDateTime.now(zoneId);
-    String formTime = currentTime.format(format).replace("GMT", "UTC");
+    DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
+    String formattedTime = currentTime.format(format).replace("GMT", "UTC");
 
+    Context context = new Context(Locale.US);
 
-    response.setContentType("text/html; charset=utf-8");
-    response.getWriter().println("<html>");
-    response.getWriter().println("<body>");
-    response.getWriter().println(formTime);
-    response.getWriter().println("</body>");
-    response.getWriter().println("</html>");
-    response.getWriter().close();
+    context.setVariable("currentTime", formattedTime);
+    context.setVariable("timezone", timezoneParam != null ? timezoneParam : "UTC");
 
+    engine.process("timeTemplate", context, response.getWriter());
   }
 }
-
