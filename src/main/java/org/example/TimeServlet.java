@@ -43,21 +43,21 @@ public class TimeServlet extends HttpServlet {
           throws ServletException, IOException {
     String timezoneParam = request.getParameter("timezone");
     ZoneId zoneId;
-    Cookie[] cookies=request.getCookies();
-    String lastTimZon=null;
-    if (cookies!=null){
-      for (Cookie cookie:cookies ) {
-if ("lastTime".equals(cookie.getName())){
-  lastTimZon= cookie.getValue();
- break;
-}
+    Cookie[] cookies = request.getCookies();
+    String lastTimZon = null;
+    if (cookies != null) {
+      for (Cookie cookie : cookies) {
+        if ("lastTime".equals(cookie.getName())) {
+          lastTimZon = cookie.getValue();
+          break;
+        }
       }
     }
 
 
     if (timezoneParam != null && !timezoneParam.isEmpty()) {
-zoneId= ZoneId.of(timezoneParam);
-      Cookie timezoneCookie = new Cookie("lastTime",timezoneParam);
+      zoneId = ZoneId.of(timezoneParam);
+      Cookie timezoneCookie = new Cookie("lastTime", timezoneParam);
       timezoneCookie.setMaxAge(30 * 24 * 60 * 60);
       timezoneCookie.setPath("/");
       response.addCookie(timezoneCookie);
