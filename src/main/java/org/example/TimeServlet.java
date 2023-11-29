@@ -8,6 +8,7 @@ import org.thymeleaf.web.servlet.JavaxServletWebApplication;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -28,8 +29,7 @@ public class TimeServlet extends HttpServlet {
     JavaxServletWebApplication jswa =
             JavaxServletWebApplication.buildApplication(this.getServletContext());
 
-    WebApplicationTemplateResolver
-            resolver = new WebApplicationTemplateResolver(jswa);
+    WebApplicationTemplateResolver resolver = new WebApplicationTemplateResolver(jswa);
     resolver.setPrefix("/templates/");
     resolver.setSuffix(".html");
     resolver.setTemplateMode("HTML5");
@@ -39,21 +39,42 @@ public class TimeServlet extends HttpServlet {
   }
 
   @Override
-  protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-
+  protected void doGet(HttpServletRequest request, HttpServletResponse response)
+          throws ServletException, IOException {
     String timezoneParam = request.getParameter("timezone");
-    if (timezoneParam == null) {
-      timezoneParam = "Etc/GMT";
-    } else {
-      timezoneParam = timezoneParam.replace("UTC+", "Etc/GMT-").replace("UTC-", "Etc/GMT+");
+    ZoneId zoneId;
+    Cookie[] cookies=request.getCookies();
+    String lastTimZon=null;
+    if (cookies!=null){
+      for (Cookie cookie:cookies ) {
+if ("lastTime".equals(cookie.getName())){
+  lastTimZon= cookie.getValue();
+ break;
+}
+      }
     }
-    ZoneId zoneId = ZoneId.of(timezoneParam);
+
+
+    if (timezoneParam != null && !timezoneParam.isEmpty()) {
+zoneId= ZoneId.of(timezoneParam);
+      Cookie timezoneCookie = new Cookie("lastTime",timezoneParam);
+      timezoneCookie.setMaxAge(30 * 24 * 60 * 60);
+      timezoneCookie.setPath("/");
+      response.addCookie(timezoneCookie);
+    } else if (lastTimZon != null && !lastTimZon.isEmpty()) {
+      zoneId = ZoneId.of(lastTimZon);
+    } else {
+      zoneId = ZoneId.of("Etc/GMT");
+    }
+
+
     ZonedDateTime currentTime = ZonedDateTime.now(zoneId);
+
     DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
+
     String formattedTime = currentTime.format(format).replace("GMT", "UTC");
 
     Context context = new Context(Locale.US);
-
     context.setVariable("currentTime", formattedTime);
     context.setVariable("timezone", timezoneParam != null ? timezoneParam : "UTC");
 
